@@ -116,8 +116,6 @@ async def start_web_server():
     print(f"[INFO] Web server started on port {port}")
 
 async def main():
-    load_vacancies()
-    load_faq()
     await start_web_server()
     await dp.start_polling(bot)
 
