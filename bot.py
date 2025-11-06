@@ -6,17 +6,18 @@ from datetime import datetime
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 
+# ====================== Настройки ======================
 TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-user_data = {}
-vacancies = []
+user_data = {}    # Хранилище временных данных кандидатов
+vacancies = []    # Хранилище вакансий из CSV
+faq_data = []     # Часто задаваемые вопросы
 
-# ---------------- ВАКАНСИИ ----------------
-
+# ====================== ВАКАНСИИ ======================
 def load_vacancies():
     global vacancies
     try:
@@ -53,20 +54,20 @@ def find_vacancies(city: str, schedule: str):
 
     for v in vacancies:
         if v["Город"].lower() == city:
-            if "день" in schedule and int(v["День"]) > 0:
+            if "день" in schedule and int(v.get("День", 0)) > 0:
                 result.append(v)
-            elif "ноч" in schedule and int(v["Ночь"]) > 0:
+            elif "ноч" in schedule and int(v.get("Ночь", 0)) > 0:
                 result.append(v)
     return result
 
-# ---------------- ЛОГИРОВАНИЕ ----------------
-
+# ====================== ЛОГИРОВАНИЕ ======================
 def log_application(data: dict, status: str, note: str = ""):
     log_exists = os.path.isfile("applications_log.csv")
     with open("applications_log.csv", "a", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
         if not log_exists:
-            writer.writerow(["Дата", "ФИО", "Возраст", "Телефон", "Город", "График", "Смена", "Статус", "Примечание"])
+            writer.writerow(["Дата", "ФИО", "Возраст", "Телефон", "Город",
+                             "График", "Смена", "Статус", "Примечание"])
         writer.writerow([
             datetime.now().strftime("%Y-%m-%d %H:%M"),
             data.get("fio", "-"),
@@ -79,8 +80,62 @@ def log_application(data: dict, status: str, note: str = ""):
             note
         ])
 
-# ---------------- АНКЕТА ----------------
+# ====================== FAQ ======================
+def load_faq():
+    global faq_data
+    try:
+        with open("faq.csv", "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            faq_data = list(reader)
+        print(f"[INFO] Загружено {len(faq_data)} FAQ")
+    except FileNotFoundError:
+        faq_data = []
+        print("[INFO] faq.csv не найден")
 
+
+def save_faq():
+    with open("faq.csv", "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["Вопрос", "Ответ"])
+        writer.writeheader()
+        writer.writerows(faq_data)
+
+
+@dp.message(Command("faq"))
+async def show_faq(message: types.Message):
+    if not faq_data:
+        await message.answer("FAQ пока пуст 😔")
+        return
+    text = "\n\n".join([f"❓ {item['Вопрос']}\n💬 {item['Ответ']}" for item in faq_data])
+    await message.answer(text)
+
+
+@dp.message(Command("add_faq"))
+async def add_faq(message: types.Message):
+    if message.from_user.id != ADMIN_ID:
+        await message.answer("Эта команда только для администратора.")
+        return
+    user_data[message.from_user.id] = {"adding_faq": "question"}
+    await message.answer("✏️ Напиши вопрос для FAQ:")
+
+
+@dp.message(lambda msg: user_data.get(msg.from_user.id, {}).get("adding_faq") == "question")
+async def add_faq_question(message: types.Message):
+    user_data[message.from_user.id]["faq_question"] = message.text
+    user_data[message.from_user.id]["adding_faq"] = "answer"
+    await message.answer("📝 Теперь напиши ответ:")
+
+
+@dp.message(lambda msg: user_data.get(msg.from_user.id, {}).get("adding_faq") == "answer")
+async def add_faq_answer(message: types.Message):
+    q = user_data[message.from_user.id]["faq_question"]
+    a = message.text
+    faq_data.append({"Вопрос": q, "Ответ": a})
+    save_faq()
+    user_data.pop(message.from_user.id, None)
+    await message.answer("✅ Новый FAQ добавлен!")
+
+
+# ====================== АНКЕТА ======================
 @dp.message(Command("start"))
 async def start(message: types.Message):
     user_data[message.from_user.id] = {}
@@ -97,7 +152,6 @@ async def fio_step(message: types.Message):
 async def age_step(message: types.Message):
     data = user_data[message.from_user.id]
     data["age"] = message.text
-
     try:
         age = int(data["age"])
     except ValueError:
@@ -105,16 +159,8 @@ async def age_step(message: types.Message):
         return
 
     if age < 18:
-        await message.answer(
-            "Спасибо за ответ! К сожалению, пока не готовы рассмотреть тебя в команду, "
-            "так как берём ребят от 18 лет, но давай не теряться! Как только тебе исполнится 18 — сразу пиши)
-"
-            "А пока будем ждать тебя в качестве гостя, хорошего тебе дня! 🌞"
-        )
-        await bot.send_message(
-            ADMIN_ID,
-            f"❌ Отказ кандидату\nФИО: {data['fio']}\nВозраст: {data['age']}\nПричина: Возраст < 18"
-        )
+        await message.answer("Спасибо за ответ! К сожалению, пока не готовы рассмотреть тебя в команду (минимум 18 лет).")
+        await bot.send_message(ADMIN_ID, f"Отказ кандидату: {data['fio']} (возраст {data['age']})")
         log_application(data, "Отказ", "Возраст < 18")
         user_data.pop(message.from_user.id, None)
         return
@@ -177,17 +223,11 @@ async def finish_survey(message: types.Message):
     matches = find_vacancies(data["city"], data["schedule"])
     if matches:
         options = "\n".join([f"{v['Кофейня']} — {v['Адрес']}" for v in matches])
-        await message.answer(
-            f"Могу предложить тебе эти кофейни в твоём городе:\n\n{options}\n\nКакая будет удобнее?"
-        )
+        await message.answer(f"Могу предложить тебе эти кофейни в твоём городе:\n\n{options}\n\nКакая будет удобнее?")
         data["awaiting_choice"] = True
     else:
         await message.answer("Пока нет открытых вакансий в твоём городе под этот график 😔")
-        await bot.send_message(
-            ADMIN_ID,
-            f"📋 Анкета (без подходящих вакансий)\nФИО: {data['fio']}\nВозраст: {data['age']}\n"
-            f"Город: {data['city']}\nГрафик: {data['schedule']}\nСмена: {shift}"
-        )
+        await bot.send_message(ADMIN_ID, f"Анкета без вакансий:\n{data['fio']} ({data['city']}, {data['schedule']})")
         log_application(data, "Без подходящих вакансий")
         user_data.pop(message.from_user.id, None)
 
@@ -196,39 +236,31 @@ async def finish_survey(message: types.Message):
 async def choose_cafe(message: types.Message):
     data = user_data[message.from_user.id]
     data["chosen_cafe"] = message.text
-
     await message.answer("Спасибо! Передаю твою анкету менеджеру ☕")
-    await bot.send_message(
-        ADMIN_ID,
-        f"📋 Новая анкета\nФИО: {data['fio']}\nВозраст: {data['age']}\nТелефон: {data['phone']}\n"
-        f"Город: {data['city']}\nГрафик: {data['schedule']}\nСмена: {data.get('shift', '—')}\n"
-        f"Выбранная кофейня: {data['chosen_cafe']}"
-    )
-    log_application(data, "Принят", data["chosen_cafe"])
+    await bot.send_message(ADMIN_ID, f"Новая анкета:\n{data}")
+    log_application(data, "Отправлено менеджеру")
     user_data.pop(message.from_user.id, None)
 
-# ---------------- FAQ ----------------
-
-FAQ = {
-    "график": "У нас есть дневные и ночные смены, полные и неполные. Расскажи, какой тебе удобнее?",
-    "зарплата": "Зависит от города и формата смен. Менеджер расскажет подробнее после анкеты.",
-    "возраст": "Мы принимаем кандидатов от 18 лет.",
-    "форма": "Форма выдаётся на месте ☕"
-}
-
+# ====================== FAQ АВТООТВЕТ ======================
 @dp.message()
-async def faq_handler(message: types.Message):
+async def handle_message(message: types.Message):
     text = message.text.lower()
-    for key, answer in FAQ.items():
-        if key in text:
-            await message.answer(answer)
+    for item in faq_data:
+        if item["Вопрос"].lower() in text:
+            await message.answer(item["Ответ"])
             return
 
-# ---------------- MAIN ----------------
+    # Если совпадений нет — уведомляем админа
+    if message.from_user.id != ADMIN_ID:
+        await bot.send_message(ADMIN_ID, f"❓ Новый вопрос без ответа:\n{message.text}")
+    await message.answer("Спасибо за сообщение! Передал его менеджеру ☕")
+
 
 async def main():
     load_vacancies()
+    load_faq()
     await dp.start_polling(bot)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
