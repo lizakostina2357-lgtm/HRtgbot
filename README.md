@@ -1,17 +1,26 @@
-# Coffee HR Bot (Final Version)
+# Coffee HR Bot с FAQ и Excel
 
-Бот для сети кофеен Кофемашина ☕
-- Пошаговая анкета кандидата
-- Проверка возраста и графика
-- Подбор вакансий по городу
-- Отправка анкет админу
-- Встроенный веб-сервер для Render
+## Состав проекта
 
-## Запуск
-1. Установите зависимости:
-   pip install -r requirements.txt
+- bot_webhook.py — код бота
+- vacancies.xlsx — вакансии
+- FAQ.xlsx — вопросы и ответы
+- requirements.txt — зависимости
 
-2. Запустите бота:
-   python bot_final_embedded.py
+## Переменные окружения
 
-3. При деплое на Render используйте порт 8080.
+BOT_TOKEN=8469560301:AAE8ICqpKGb07JL7X4514BNcN215UDuAqwM
+WEBHOOK_URL=https://<адрес_вашего_сайта_на_Render>
+PORT=8080
+
+
+## Запуск на Render
+
+1. Загрузить проект на GitHub или напрямую на Render.
+2. Manual Deploy → Clear cache & deploy latest commit.
+3. Бот работает через Webhook и отвечает на FAQ, а также запускает анкету на любое сообщение.
+
+## FAQ
+
+- Вопросы и ответы берутся из FAQ.xlsx
+- Совпадение по тексту, регистр не важен.
