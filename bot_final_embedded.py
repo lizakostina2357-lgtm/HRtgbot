@@ -7,7 +7,7 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiohttp import web
 
 # === Настройки ===
-TOKEN = "YOUR_BOT_TOKEN_HERE"  # 🔹 Вставь сюда свой токен
+TOKEN = "8469560301:AAE8ICqpKGb07JL7X4514BNcN215UDuAqwM"
 ADMIN_ID = 386621236
 
 # === Инициализация ===
