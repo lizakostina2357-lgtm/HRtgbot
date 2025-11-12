@@ -7,7 +7,7 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiohttp import web
 
 # ====================== Настройки ======================
-TOKEN = os.getenv("8469560301:AAE8ICqpKGb07JL7X4514BNcN215UDuAqwM")
+TOKEN = os.getenv("BOT_TOKEN") or "YOUR_BOT_TOKEN_HERE"
 ADMIN_ID = 386621236
 WEBHOOK_PATH = f"/webhook/{TOKEN}"
 WEBAPP_HOST = "0.0.0.0"
@@ -192,7 +192,6 @@ async def handle_message(message: types.Message):
             return
         state['schedule_time'] = f"{start_h:02d}:{start_m:02d}-{end_h:02d}:{end_m:02d}"
 
-        # ====================== Подбор вакансий ======================
         matched = find_vacancies(state['city'], state['shift_type'], state['full_partial'])
         if not matched and state['full_partial'].lower() == "неполные":
             await ask_question(user_id, message,
@@ -210,9 +209,9 @@ async def handle_message(message: types.Message):
         else:
             await ask_question(user_id, message, "Пока нет подходящих вакансий.")
 
-        # Логируем и отправляем админу
         log_application(state, "Анкета отправлена")
-        await bot.send_message(ADMIN_ID, f"Новая анкета:\nФИО: {state['fio']}\nВозраст: {state['age']}\nТелефон: {state['phone']}\nГород: {state['city']}\nСмены: {state['shift_type']}/{state['full_partial']}\nВремя: {state['schedule_time']}")
+        await bot.
+        send_message(ADMIN_ID, f"Новая анкета:\nФИО: {state['fio']}\nВозраст: {state['age']}\nТелефон: {state['phone']}\nГород: {state['city']}\nСмены: {state['shift_type']}/{state['full_partial']}\nВремя: {state['schedule_time']}")
         user_data.pop(user_id, None)
         return
 
