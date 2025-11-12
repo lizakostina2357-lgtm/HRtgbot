@@ -7,7 +7,7 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiohttp import web
 
 # ====================== Настройки ======================
-TOKEN = os.getenv("BOT_TOKEN") or "YOUR_BOT_TOKEN_HERE"
+TOKEN = os.getenv("8469560301:AAE8ICqpKGb07JL7X4514BNcN215UDuAqwM")
 ADMIN_ID = 386621236
 WEBHOOK_PATH = f"/webhook/{TOKEN}"
 WEBAPP_HOST = "0.0.0.0"
