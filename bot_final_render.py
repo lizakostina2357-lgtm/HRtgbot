@@ -8,7 +8,7 @@ from aiogram.filters import Command
 from aiogram.utils.keyboard import ReplyKeyboardMarkup, KeyboardButton
 from aiohttp import web
 
-TOKEN = "8469560301:AAHguroyeXXe9tcMjPqV6D9YskWZ3X19r6c"
+TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = 386621236
 
 bot = Bot(token=TOKEN)
