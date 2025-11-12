@@ -1,3 +1,17 @@
-# Coffee HR Bot - fixed dependencies
+# Coffee HR Bot (Final Version)
 
-Используйте этот requirements.txt для Python 3.10+.
+Бот для сети кофеен Кофемашина ☕
+- Пошаговая анкета кандидата
+- Проверка возраста и графика
+- Подбор вакансий по городу
+- Отправка анкет админу
+- Встроенный веб-сервер для Render
+
+## Запуск
+1. Установите зависимости:
+   pip install -r requirements.txt
+
+2. Запустите бота:
+   python bot_final_embedded.py
+
+3. При деплое на Render используйте порт 8080.
